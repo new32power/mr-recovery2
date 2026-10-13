@@ -1,0 +1,44 @@
+name: Deploy MR-PANEL
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --no-frozen-lockfile
+
+      # 1. Deploy EventBus Durable Object Worker
+      - name: Deploy EventBus Worker
+        working-directory: artifacts/event-bus-worker
+        run: npx wrangler@3 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      # 2. Build React SPA + CF Worker bundle
+      - name: Build Dashboard
+        run: pnpm --filter @workspace/dashboard run build
+        env:
+          VITE_API_SECRET: ${{ secrets.API_SECRET }}
+
+      # 3. Deploy to CF Pages (project: mr-panel)
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler@3 pages deploy artifacts/dashboard/dist/public --project-name=mrsender --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}

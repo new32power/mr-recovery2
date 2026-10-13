@@ -1,0 +1,42 @@
+name: Deploy EventBus Worker
+
+# Auto-deploys the EventBus Durable Object Worker to Cloudflare whenever
+# its source files change. The Pages site (frontend + API) is deployed
+# automatically by Cloudflare Pages on every push to main.
+#
+# Required GitHub repo secrets:
+#   - CLOUDFLARE_API_TOKEN  (Account → API Tokens → Edit Cloudflare Workers)
+#   - CLOUDFLARE_ACCOUNT_ID (Account → right sidebar)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "artifacts/event-bus-worker/**"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: artifacts/event-bus-worker
+          command: deploy

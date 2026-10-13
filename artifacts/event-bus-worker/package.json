@@ -1,0 +1,15 @@
+{
+  "name": "@workspace/event-bus-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241224.0",
+    "typescript": "~5.9.3",
+    "wrangler": "^3.95.0"
+  }
+}
